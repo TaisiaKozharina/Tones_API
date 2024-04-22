@@ -1,8 +1,11 @@
-import { Body, Controller, Get, Logger, Param, ParseIntPipe, Post, UsePipes } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Header, Logger, Param, ParseIntPipe, Post, UsePipes } from '@nestjs/common';
 import { AppService } from './app.service';
 import { ProtocolWithStepsDTO } from 'sharedlib/dto/protocol.dto';
 import { ParseDatePipe } from './parse-date.pipe';
 import { PermanentLiquidDTO } from 'sharedlib/dto/liquid.dto';
+import { Request as ExpressRequest, Router} from "express";
+import { Request } from "@nestjs/common";
+
 
 @Controller()
 @UsePipes(new ParseDatePipe())
@@ -13,6 +16,23 @@ export class AppController {
     constructor(
         private readonly appService: AppService,
     ) { }
+
+    @Get("/")
+    getEndpoints(@Request() req: ExpressRequest) {
+        const router = req.app._router as Router;
+        return {
+            routes: router.stack
+                .map(layer => {
+                    if(layer.route) {
+                        const path = layer.route?.path;
+                        const method = layer.route?.stack[0].method;
+                        return `${method.toUpperCase()} ${path}`
+                    }
+                    return undefined;
+                })
+                .filter(item => item !== undefined)
+        }
+    }
 
     @Get("protocols")
     getProtocols() {
@@ -30,6 +50,13 @@ export class AppController {
     getProtocolWithSteps(@Param('id', new ParseIntPipe()) id: number) {
         this.logger.log(`Retrieving protocol ${id}`)
         return this.appService.getProtocolWithSteps(id);
+    }
+
+    @Delete("/protocol/delete/:id")
+    async deleteProtocol(@Param('id', new ParseIntPipe()) id: number) {
+        this.logger.log(`Deleting protocol ${id}`);
+        await this.appService.deleteProtocol(id);
+        return 'Deleted protocol';
     }
 
     @Get("liquids")
@@ -51,6 +78,7 @@ export class AppController {
     }
 
     @Post("/protocol/save")
+    @Header("Content-Type", "application/json")
     async saveProtocol(@Body() protocol: ProtocolWithStepsDTO) {
         this.logger.log(`Saving protocol: ${JSON.stringify(protocol)}`)
         return await this.appService.saveProtocol(protocol);
@@ -60,6 +88,13 @@ export class AppController {
     async saveLiquid(@Body() liquid: PermanentLiquidDTO) {
         this.logger.log(`Saving liquid: ${JSON.stringify(liquid)}`)
         return await this.appService.saveLiquid(liquid);
+    }
+
+    @Delete("/liquid/delete/:id")
+    async deleteLiquid(@Param('id', new ParseIntPipe()) id: number) {
+        this.logger.log(`Deleting liquid ${id}`)
+        await this.appService.deleteLiquid(id);
+        return 'Deleted liquid';
     }
 
 }

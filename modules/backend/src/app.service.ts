@@ -9,7 +9,6 @@ import { ProtocolSavingService } from './protocol-saving.service';
 
 @Injectable()
 export class AppService {
-
     private readonly logger = new Logger(AppService.name);
 
     constructor(
@@ -86,6 +85,14 @@ export class AppService {
 
     async saveLiquid(liquid: PermanentLiquidDTO) {
         return this.dbService.saveLiquid(liquid);
+    }
+
+    async deleteProtocol(id: number) {
+        await this.dbService.deleteProtocol(id);
+    }
+
+    async deleteLiquid(id: number) {
+        await this.dbService.deleteLiquid(id);
     }
 
 
